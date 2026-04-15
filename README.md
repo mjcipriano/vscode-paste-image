@@ -39,12 +39,12 @@ npx vsce package
 
 ### Install from VSIX
 
-In VS Code, open the Extensions view, choose `...`, select `Install from VSIX...`, and pick the generated `paste-image-internal-1.0.4-internal.1.vsix` file.
+In VS Code, open the Extensions view, choose `...`, select `Install from VSIX...`, and pick the generated `paste-image-internal-1.0.4-internal.2.vsix` file.
 
 You can also install it from the command line:
 
 ```
-code --install-extension paste-image-internal-1.0.4-internal.1.vsix
+code --install-extension paste-image-internal-1.0.4-internal.2.vsix
 ```
 
 ## Config

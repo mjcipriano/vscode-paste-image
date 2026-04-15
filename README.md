@@ -18,6 +18,35 @@ Now you can enable `pasteImage.showFilePathConfirmInputBox` to modify file path 
 4. Image will be saved in the folder that contains current editing file
 5. The relative path will be paste to current editing file 
 
+## Internal WSL Build
+
+This fork is published as `paste-image-internal` / `Paste Image Internal` so it can be installed side by side without conflicting with the public Marketplace extension.
+
+The original Linux implementation shells out to `xclip`. That works on native Linux desktops, but it fails in many VS Code Remote - WSL workflows because the screenshot or copied image is usually in the Windows clipboard, not in an X11 clipboard inside the WSL distro.
+
+When the extension detects WSL through `WSL_DISTRO_NAME`, `WSL_INTEROP`, or `/proc/sys/kernel/osrelease`, it skips `xclip`. Instead it converts the target WSL output path with `wslpath -w`, runs `powershell.exe` with `-NoProfile -NonInteractive -NoLogo -STA -ExecutionPolicy Bypass`, reads the Windows clipboard image with `Get-Clipboard -Format Image`, creates the output directory if needed, and saves a PNG into the current WSL workspace path.
+
+Native Windows, macOS, and non-WSL Linux behavior is unchanged. Non-WSL Linux still uses `xclip`.
+
+### Package as VSIX
+
+Install dependencies if needed, then build the VSIX:
+
+```
+npm install
+npx vsce package
+```
+
+### Install from VSIX
+
+In VS Code, open the Extensions view, choose `...`, select `Install from VSIX...`, and pick the generated `paste-image-internal-1.0.4-internal.1.vsix` file.
+
+You can also install it from the command line:
+
+```
+code --install-extension paste-image-internal-1.0.4-internal.1.vsix
+```
+
 ## Config
 
 - `pasteImage.defaultName`

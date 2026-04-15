@@ -1,25 +1,31 @@
 param($imagePath)
 
-# Adapted from https://github.com/octan3/img-clipboard-dump/blob/master/dump-clipboard-png.ps1
+if ([string]::IsNullOrWhiteSpace($imagePath)) {
+    "no output path"
+    Exit 1
+}
 
-Add-Type -Assembly PresentationCore
-$img = [Windows.Clipboard]::GetImage()
+try {
+    Add-Type -AssemblyName System.Drawing
+    $img = Get-Clipboard -Format Image -ErrorAction Stop
+} catch {
+    "no image in clipboard"
+    Exit 1
+}
 
 if ($img -eq $null) {
-    "no image"
+    "no image in clipboard"
     Exit 1
 }
 
-if (-not $imagePath) {
-    "no image"
-    Exit 1
+$imageDir = Split-Path -Parent $imagePath
+if ($imageDir) {
+    New-Item -ItemType Directory -Path $imageDir -Force | Out-Null
 }
 
-$fcb = new-object Windows.Media.Imaging.FormatConvertedBitmap($img, [Windows.Media.PixelFormats]::Rgb24, $null, 0)
-$stream = [IO.File]::Open($imagePath, "OpenOrCreate")
-$encoder = New-Object Windows.Media.Imaging.PngBitmapEncoder
-$encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($fcb)) | out-null
-$encoder.Save($stream) | out-null
-$stream.Dispose() | out-null
+$img.Save($imagePath, [System.Drawing.Imaging.ImageFormat]::Png)
+if ($img -is [System.IDisposable]) {
+    $img.Dispose()
+}
 
 $imagePath

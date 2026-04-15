@@ -37,6 +37,14 @@ npm install
 npx vsce package
 ```
 
+### Release from GitHub Actions
+
+Release tags must match the package version in `package.json` with a leading `v`, for example `v1.0.4-internal.2`.
+
+When a matching tag is pushed, GitHub Actions runs the unit tests, packages the VSIX, creates or updates the GitHub Release for the tag, and attaches the generated VSIX file.
+
+The release workflow can also be run manually from GitHub Actions with an existing tag to backfill a missing release asset.
+
 ### Install from VSIX
 
 In VS Code, open the Extensions view, choose `...`, select `Install from VSIX...`, and pick the generated `paste-image-internal-1.0.4-internal.2.vsix` file.

@@ -46,12 +46,12 @@
         "pasteImageInternal.path": {
           "type": "string",
           "default": "${currentFileDir}",
-          "description": "The destination to save image file.You can use variable ${currentFileDir} and ${projectRoot}. ${currentFileDir} will be replace by the path of directory that contain current editing file. ${projectRoot} will be replace by path of the project opened in vscode."
+          "description": "The destination to save image file. Supports variables such as ${currentFileDir}, ${currentFileDirName}, ${currentFileParentDir}, ${currentFileParentDirName}, ${projectRoot}, ${projectRootName}, ${currentFileName}, ${currentFileNameWithoutExt}, and ${currentFileExt}."
         },
         "pasteImageInternal.basePath": {
           "type": "string",
           "default": "${currentFileDir}",
-          "description": "The base path of image url.You can use variable ${currentFileDir} and ${projectRoot}. ${currentFileDir} will be replace by the path of directory that contain current editing file. ${projectRoot} will be replace by path of the project opened in vscode. If you set basePath to empty String, it will insert absolute path to file."
+          "description": "The base path of image url. Supports the same current-file variables as pasteImageInternal.path. If you set basePath to empty string, it will insert an absolute path to file."
         },
         "pasteImageInternal.forceUnixStyleSeparator": {
           "type": "boolean",
@@ -71,17 +71,17 @@
         "pasteImageInternal.defaultName": {
           "type": "string",
           "default": "Y-MM-DD-HH-mm-ss",
-          "description": "The default image file name. The value of this config will be pass to the 'format' function of moment library(a js time manipulation library), you can read document https://momentjs.com/docs/#/displaying/format/ for advanced usage."
+          "description": "The default image file name. The value of this config will be passed to the moment format function. Supports current-file variables before formatting."
         },
         "pasteImageInternal.namePrefix": {
           "type": "string",
           "default": "",
-          "description": "The string prepend to the image file name."
+          "description": "The string prepended to the image file name. Supports current-file variables such as ${currentFileDirName}."
         },
         "pasteImageInternal.nameSuffix": {
           "type": "string",
           "default": "",
-          "description": "The string append to the image file name."
+          "description": "The string appended to the image file name. Supports current-file variables."
         },
         "pasteImageInternal.encodePath": {
           "type": "string",
@@ -96,7 +96,7 @@
         "pasteImageInternal.insertPattern": {
           "type": "string",
           "default": "${imageSyntaxPrefix}${imageFilePath}${imageSyntaxSuffix}",
-          "description": "The pattern of string that would be pasted to text."
+          "description": "The pattern of string that would be pasted to text. Supports image variables and current-file variables."
         },
         "pasteImageInternal.showFilePathConfirmInputBox": {
           "type": "boolean",

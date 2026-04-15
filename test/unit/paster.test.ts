@@ -126,13 +126,33 @@ suite('Paster path helpers', () => {
 
     test('replacePathVariable substitutes file and project tokens', () => {
         var result = Paster.replacePathVariable(
-            '${projectRoot}/${currentFileDir}/${currentFileName}/${currentFileNameWithoutExt}',
+            [
+                '${projectRoot}',
+                '${projectRootName}',
+                '${currentFileDir}',
+                '${currentFileDirName}',
+                '${currentFileParentDir}',
+                '${currentFileParentDirName}',
+                '${currentFileName}',
+                '${currentFileNameWithoutExt}',
+                '${currentFileExt}'
+            ].join('|'),
             '/workspace',
-            '/workspace/docs/guide.md',
+            '/workspace/docs/api/guide.md',
             (value: string) => '[' + value + ']'
         );
 
-        assert.equal(result, '[/workspace]/[/workspace/docs]/[guide.md]/[guide]');
+        assert.equal(result, '[/workspace]|[workspace]|[/workspace/docs/api]|[api]|[/workspace/docs]|[docs]|[guide.md]|[guide]|[.md]');
+    });
+
+    test('getImagePath can prepend the current directory name to the image filename', (done) => {
+        Paster.namePrefixConfig = Paster.replacePathVariable('${currentFileDirName}_', '/workspace', '/workspace/docs/api/guide.md');
+
+        Paster.getImagePath('/workspace/docs/api/guide.md', 'diagram', 'images', false, 'fullPath', function (err, imagePath) {
+            assert.ifError(err);
+            assert.equal(imagePath, path.join('/workspace/docs/api/images', 'api_diagram.png'));
+            done();
+        });
     });
 
     test('getImagePath builds a path beside the current file for relative image folders', (done) => {

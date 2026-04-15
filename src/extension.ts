@@ -7,7 +7,7 @@ import { spawn } from 'child_process';
 import * as moment from 'moment';
 import * as upath from 'upath';
 
-class Logger {
+export class Logger {
     static channel: vscode.OutputChannel;
 
     static log(message: any) {
@@ -48,7 +48,7 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
 }
 
-class Paster {
+export class Paster {
     static PATH_VARIABLE_CURRNET_FILE_DIR = /\$\{currentFileDir\}/g;
     static PATH_VARIABLE_PROJECT_ROOT = /\$\{projectRoot\}/g;
     static PATH_VARIABLE_CURRNET_FILE_NAME = /\$\{currentFileName\}/g;

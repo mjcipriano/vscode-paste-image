@@ -29,12 +29,12 @@ class Logger {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-    Logger.channel = vscode.window.createOutputChannel("PasteImage")
+    Logger.channel = vscode.window.createOutputChannel("PasteImageInternal")
     context.subscriptions.push(Logger.channel);
 
-    Logger.log('Congratulations, your extension "vscode-paste-image" is now active!');
+    Logger.log('Congratulations, your extension "paste-image-internal" is now active!');
 
-    let disposable = vscode.commands.registerCommand('extension.pasteImage', () => {
+    let disposable = vscode.commands.registerCommand('paste-image-internal.pasteImage', () => {
         try {
             Paster.paste();
         } catch (e) {
@@ -171,8 +171,12 @@ class Paster {
             // save image and insert to current edit file
             this.saveClipboardImageToFileAndGetPath(imagePath, (imagePath, imagePathReturnByScript) => {
                 if (!imagePathReturnByScript) return;
-                if (imagePathReturnByScript === 'no image') {
+                if (imagePathReturnByScript.indexOf('no image') === 0) {
                     Logger.showInformationMessage('There is not an image in the clipboard.');
+                    return;
+                }
+                if (imagePathReturnByScript.indexOf('no output path') === 0) {
+                    Logger.showErrorMessage('Failed to save clipboard image because no output path was provided.');
                     return;
                 }
 
@@ -299,29 +303,7 @@ class Paster {
                 command = "powershell"
             }
 
-            const powershell = spawn(command, [
-                '-noprofile',
-                '-noninteractive',
-                '-nologo',
-                '-sta',
-                '-executionpolicy', 'unrestricted',
-                '-windowstyle', 'hidden',
-                '-file', scriptPath,
-                imagePath
-            ]);
-            powershell.on('error', function (e) {
-                if (e.code == "ENOENT") {
-                    Logger.showErrorMessage(`The powershell command is not in you PATH environment variables. Please add it and retry.`);
-                } else {
-                    Logger.showErrorMessage(e);
-                }
-            });
-            powershell.on('exit', function (code, signal) {
-                // console.log('exit', code, signal);
-            });
-            powershell.stdout.on('data', function (data: Buffer) {
-                cb(imagePath, data.toString().trim());
-            });
+            this.runPowerShellClipboardScript(command, scriptPath, imagePath, imagePath, cb);
         }
         else if (platform === 'darwin') {
             // Mac
@@ -339,6 +321,10 @@ class Paster {
             });
         } else {
             // Linux 
+            if (this.isWsl()) {
+                this.saveClipboardImageToFileWithWslPowerShell(imagePath, cb);
+                return;
+            }
 
             let scriptPath = path.join(__dirname, '../../res/linux.sh');
 
@@ -358,6 +344,100 @@ class Paster {
                 cb(imagePath, result);
             });
         }
+    }
+
+    private static isWsl(): boolean {
+        if (process.env['WSL_DISTRO_NAME'] || process.env['WSL_INTEROP']) {
+            return true;
+        }
+
+        try {
+            let osRelease = fs.readFileSync('/proc/sys/kernel/osrelease', 'utf8').toLowerCase();
+            return osRelease.indexOf('microsoft') >= 0 || osRelease.indexOf('wsl') >= 0;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    private static saveClipboardImageToFileWithWslPowerShell(imagePath, cb: (imagePath: string, imagePathFromScript: string) => void) {
+        let scriptPath = path.join(__dirname, '../../res/pc.ps1');
+        this.convertWslPathToWindowsPath(scriptPath, 'PowerShell helper path', (windowsScriptPath) => {
+            if (!windowsScriptPath) return;
+
+            this.convertWslPathToWindowsPath(imagePath, 'image output path', (windowsImagePath) => {
+                if (!windowsImagePath) return;
+
+                this.runPowerShellClipboardScript('powershell.exe', windowsScriptPath, windowsImagePath, imagePath, cb);
+            });
+        });
+    }
+
+    private static convertWslPathToWindowsPath(wslPath: string, description: string, callback: (windowsPath: string) => void) {
+        let wslpath = spawn('wslpath', ['-w', wslPath]);
+        let stdout = "";
+        let stderr = "";
+
+        wslpath.on('error', function (e) {
+            Logger.showErrorMessage(`Failed to run wslpath for ${description}. message=${e.message}`);
+        });
+        wslpath.stdout.on('data', function (data: Buffer) {
+            stdout += data.toString();
+        });
+        wslpath.stderr.on('data', function (data: Buffer) {
+            stderr += data.toString();
+        });
+        wslpath.on('close', function (code) {
+            let windowsPath = stdout.trim();
+            if (code !== 0 || !windowsPath) {
+                Logger.showErrorMessage(`Failed to convert ${description} for PowerShell. message=${stderr.trim()}`);
+                return;
+            }
+
+            callback(windowsPath);
+        });
+    }
+
+    private static runPowerShellClipboardScript(command: string, scriptPath: string, scriptImagePath: string, originalImagePath: string,
+        cb: (imagePath: string, imagePathFromScript: string) => void) {
+        let powershell = spawn(command, [
+            '-NoProfile',
+            '-NonInteractive',
+            '-NoLogo',
+            '-STA',
+            '-ExecutionPolicy', 'Bypass',
+            '-WindowStyle', 'Hidden',
+            '-File', scriptPath,
+            scriptImagePath
+        ]);
+        let stdout = "";
+        let stderr = "";
+
+        powershell.on('error', function (e) {
+            if (e.code == "ENOENT") {
+                Logger.showErrorMessage(`The powershell command is not in you PATH environment variables. Please add it and retry.`);
+            } else {
+                Logger.showErrorMessage(e);
+            }
+        });
+        powershell.on('exit', function (code, signal) {
+            // console.log('exit', code, signal);
+        });
+        powershell.stdout.on('data', function (data: Buffer) {
+            stdout += data.toString();
+        });
+        powershell.stderr.on('data', function (data: Buffer) {
+            stderr += data.toString();
+        });
+        powershell.on('close', function (code) {
+            let result = stdout.trim();
+            if (result) {
+                cb(originalImagePath, result);
+                return;
+            }
+            if (code !== 0) {
+                Logger.showErrorMessage(`Failed to save clipboard image. message=${stderr.trim()}`);
+            }
+        });
     }
 
     /**

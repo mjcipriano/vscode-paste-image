@@ -49,6 +49,8 @@ export function deactivate() {
 }
 
 export class Paster {
+    static CONFIG_SECTION = "pasteImageInternal";
+
     static PATH_VARIABLE_CURRNET_FILE_DIR = /\$\{currentFileDir\}/g;
     static PATH_VARIABLE_PROJECT_ROOT = /\$\{projectRoot\}/g;
     static PATH_VARIABLE_CURRNET_FILE_NAME = /\$\{currentFileName\}/g;
@@ -100,41 +102,41 @@ export class Paster {
             return;
         }
 
-        // load config pasteImage.defaultName
-        this.defaultNameConfig = vscode.workspace.getConfiguration('pasteImage')['defaultName'];
+        // load config pasteImageInternal.defaultName
+        this.defaultNameConfig = this.getConfigValue('defaultName');
         if (!this.defaultNameConfig) {
             this.defaultNameConfig = "Y-MM-DD-HH-mm-ss"
         }
 
-        // load config pasteImage.path
-        this.folderPathConfig = vscode.workspace.getConfiguration('pasteImage')['path'];
+        // load config pasteImageInternal.path
+        this.folderPathConfig = this.getConfigValue('path');
         if (!this.folderPathConfig) {
             this.folderPathConfig = "${currentFileDir}";
         }
         if (this.folderPathConfig.length !== this.folderPathConfig.trim().length) {
-            Logger.showErrorMessage(`The config pasteImage.path = '${this.folderPathConfig}' is invalid. please check your config.`);
+            Logger.showErrorMessage(`The config pasteImageInternal.path = '${this.folderPathConfig}' is invalid. please check your config.`);
             return;
         }
-        // load config pasteImage.basePath
-        this.basePathConfig = vscode.workspace.getConfiguration('pasteImage')['basePath'];
+        // load config pasteImageInternal.basePath
+        this.basePathConfig = this.getConfigValue('basePath');
         if (!this.basePathConfig) {
             this.basePathConfig = "";
         }
         if (this.basePathConfig.length !== this.basePathConfig.trim().length) {
-            Logger.showErrorMessage(`The config pasteImage.path = '${this.basePathConfig}' is invalid. please check your config.`);
+            Logger.showErrorMessage(`The config pasteImageInternal.basePath = '${this.basePathConfig}' is invalid. please check your config.`);
             return;
         }
         // load other config
-        this.prefixConfig = vscode.workspace.getConfiguration('pasteImage')['prefix'];
-        this.suffixConfig = vscode.workspace.getConfiguration('pasteImage')['suffix'];
-        this.forceUnixStyleSeparatorConfig = vscode.workspace.getConfiguration('pasteImage')['forceUnixStyleSeparator'];
+        this.prefixConfig = this.getConfigValue('prefix');
+        this.suffixConfig = this.getConfigValue('suffix');
+        this.forceUnixStyleSeparatorConfig = this.getConfigValue('forceUnixStyleSeparator');
         this.forceUnixStyleSeparatorConfig = !!this.forceUnixStyleSeparatorConfig;
-        this.encodePathConfig = vscode.workspace.getConfiguration('pasteImage')['encodePath'];
-        this.namePrefixConfig = vscode.workspace.getConfiguration('pasteImage')['namePrefix'];
-        this.nameSuffixConfig = vscode.workspace.getConfiguration('pasteImage')['nameSuffix'];
-        this.insertPatternConfig = vscode.workspace.getConfiguration('pasteImage')['insertPattern'];
-        this.showFilePathConfirmInputBox = vscode.workspace.getConfiguration('pasteImage')['showFilePathConfirmInputBox'] || false;
-        this.filePathConfirmInputBoxMode = vscode.workspace.getConfiguration('pasteImage')['filePathConfirmInputBoxMode'];
+        this.encodePathConfig = this.getConfigValue('encodePath');
+        this.namePrefixConfig = this.getConfigValue('namePrefix');
+        this.nameSuffixConfig = this.getConfigValue('nameSuffix');
+        this.insertPatternConfig = this.getConfigValue('insertPattern');
+        this.showFilePathConfirmInputBox = this.getConfigValue('showFilePathConfirmInputBox') || false;
+        this.filePathConfirmInputBoxMode = this.getConfigValue('filePathConfirmInputBoxMode');
 
         // replace variable in config
         this.defaultNameConfig = this.replacePathVariable(this.defaultNameConfig, projectPath, filePath, (x) => `[${x}]`);
@@ -269,7 +271,7 @@ export class Paster {
                     if (stats.isDirectory()) {
                         resolve(imagePath);
                     } else {
-                        reject(new PluginError(`The image dest directory '${imageDir}' is a file. Please check your 'pasteImage.path' config.`))
+                        reject(new PluginError(`The image dest directory '${imageDir}' is a file. Please check your 'pasteImageInternal.path' config.`))
                     }
                 } else if (err.code == "ENOENT") {
                     fse.ensureDir(imageDir, (err) => {
@@ -502,6 +504,10 @@ export class Paster {
         pathStr = pathStr.replace(this.PATH_VARIABLE_CURRNET_FILE_NAME, postFunction(fileName));
         pathStr = pathStr.replace(this.PATH_VARIABLE_CURRNET_FILE_NAME_WITHOUT_EXT, postFunction(fileNameWithoutExt));
         return pathStr;
+    }
+
+    private static getConfigValue(key: string) {
+        return vscode.workspace.getConfiguration(this.CONFIG_SECTION)[key];
     }
 }
 

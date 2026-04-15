@@ -18,6 +18,8 @@ var errorMessages: string[] = [];
 var inputBoxOptions: any[] = [];
 var nextInputBoxValue: string = null;
 var registeredCommands: any[] = [];
+var configurationValues: any = {};
+var configurationConfigured: any = {};
 
 var vscodeMock = {
     window: {
@@ -53,8 +55,8 @@ var vscodeMock = {
     },
     workspace: {
         rootPath: '/workspace',
-        getConfiguration: function () {
-            return {};
+        getConfiguration: function (section: string) {
+            return createConfiguration(section);
         }
     }
 };
@@ -86,6 +88,31 @@ suite('extension activation', () => {
         assert.equal(registeredCommands.length, 1);
         assert.equal(registeredCommands[0].command, 'paste-image-internal.pasteImage');
         assert.equal(context.subscriptions.length, 2);
+    });
+});
+
+suite('Paster configuration helpers', () => {
+    setup(() => {
+        resetConfigurations();
+    });
+
+    test('uses internal configuration values', () => {
+        setConfigValue('pasteImageInternal', 'path', 'internal-images', true);
+
+        assert.equal(PasterAny.getConfigValue('path'), 'internal-images');
+    });
+
+    test('does not read legacy configuration values', () => {
+        setConfigValue('pasteImageInternal', 'path', '${currentFileDir}', false);
+        setConfigValue('pasteImage', 'path', 'legacy-images', true);
+
+        assert.equal(PasterAny.getConfigValue('path'), '${currentFileDir}');
+    });
+
+    test('uses internal defaults', () => {
+        setConfigValue('pasteImageInternal', 'path', '${currentFileDir}', false);
+
+        assert.equal(PasterAny.getConfigValue('path'), '${currentFileDir}');
     });
 });
 
@@ -475,6 +502,47 @@ function resetMessages() {
     infoMessages = [];
     errorMessages = [];
     Logger.channel = null;
+}
+
+function resetConfigurations() {
+    configurationValues = {};
+    configurationConfigured = {};
+}
+
+function setConfigValue(section: string, key: string, value: any, configured: boolean) {
+    if (!configurationValues[section]) {
+        configurationValues[section] = {};
+    }
+    if (!configurationConfigured[section]) {
+        configurationConfigured[section] = {};
+    }
+
+    configurationValues[section][key] = value;
+    configurationConfigured[section][key] = configured;
+}
+
+function createConfiguration(section: string) {
+    var values = configurationValues[section] || {};
+    var configured = configurationConfigured[section] || {};
+    var config: any = {};
+
+    Object.keys(values).forEach(function (key) {
+        config[key] = values[key];
+    });
+
+    config.inspect = function (key: string): any {
+        if (!Object.prototype.hasOwnProperty.call(values, key)) {
+            return undefined;
+        }
+
+        if (configured[key]) {
+            return { globalValue: values[key] };
+        }
+
+        return { defaultValue: values[key] };
+    };
+
+    return config;
 }
 
 function resolvedThenable(value: any) {

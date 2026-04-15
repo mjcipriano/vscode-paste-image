@@ -6,7 +6,7 @@ Paste image directly from clipboard to markdown/asciidoc(or other file)!
 
 ![paste-image](https://raw.githubusercontent.com/mushanshitiancai/vscode-paste-image/master/res/vscode-paste-image.gif)
 
-Now you can enable `pasteImage.showFilePathConfirmInputBox` to modify file path before save:
+Now you can enable `pasteImageInternal.showFilePathConfirmInputBox` to modify file path before save:
 
 ![confirm-inputbox](https://raw.githubusercontent.com/mushanshitiancai/vscode-paste-image/master/res/confirm-inputbox.png)
 
@@ -25,6 +25,8 @@ This fork is published as `paste-image-internal` / `Paste Image Internal` so it 
 The original Linux implementation shells out to `xclip`. That works on native Linux desktops, but it fails in many VS Code Remote - WSL workflows because the screenshot or copied image is usually in the Windows clipboard, not in an X11 clipboard inside the WSL distro.
 
 When the extension detects WSL through `WSL_DISTRO_NAME`, `WSL_INTEROP`, or `/proc/sys/kernel/osrelease`, it skips `xclip`. Instead it converts the target WSL output path with `wslpath -w`, runs `powershell.exe` with `-NoProfile -NonInteractive -NoLogo -STA -ExecutionPolicy Bypass`, reads the Windows clipboard image with `Get-Clipboard -Format Image`, creates the output directory if needed, and saves a PNG into the current WSL workspace path.
+
+This internal build uses the `pasteImageInternal.*` settings namespace so it can be installed side by side with the public extension without sharing configuration values. If you want the same settings as the public extension, copy the values from `pasteImage.*` to `pasteImageInternal.*`.
 
 Native Windows, macOS, and non-WSL Linux behavior is unchanged. Non-WSL Linux still uses `xclip`.
 
@@ -57,7 +59,7 @@ code --install-extension paste-image-internal-1.0.4-internal.4.vsix
 
 ## Config
 
-- `pasteImage.defaultName`
+- `pasteImageInternal.defaultName`
 
     The default image file name.
 
@@ -70,7 +72,7 @@ code --install-extension paste-image-internal-1.0.4-internal.4.vsix
 
     Default value is `Y-MM-DD-HH-mm-ss`.
 
-- `pasteImage.path`
+- `pasteImageInternal.path`
 
     The destination to save image file.
     
@@ -83,7 +85,7 @@ code --install-extension paste-image-internal-1.0.4-internal.4.vsix
 
     Default value is `${currentFileDir}`.
 
-- `pasteImage.basePath`
+- `pasteImageInternal.basePath`
 
     The base path of image url.
     
@@ -96,25 +98,25 @@ code --install-extension paste-image-internal-1.0.4-internal.4.vsix
 
     Default value is `${currentFileDir}`.
 
-- `pasteImage.forceUnixStyleSeparator`
+- `pasteImageInternal.forceUnixStyleSeparator`
 
     Force set the file separator style to unix style. If set false, separator style will follow the system style. 
     
     Default is `true`.
 
-- `pasteImage.prefix`
+- `pasteImageInternal.prefix`
 
     The string prepend to the resolved image path before paste.
 
     Default is `""`.
 
-- `pasteImage.suffix`
+- `pasteImageInternal.suffix`
 
     The string append to the resolved image path before paste.
 
     Default is `""`.
 
-- `pasteImage.encodePath`
+- `pasteImageInternal.encodePath`
 
     How to encode image path before insert to editor. Support options:
 
@@ -124,7 +126,7 @@ code --install-extension paste-image-internal-1.0.4-internal.4.vsix
 
     Default is `urlEncodeSpace`.
 
-- `pasteImage.namePrefix`
+- `pasteImageInternal.namePrefix`
 
     The string prepend to the image file name.
 
@@ -137,7 +139,7 @@ code --install-extension paste-image-internal-1.0.4-internal.4.vsix
 
     Default is `""`.
 
-- `pasteImage.nameSuffix`
+- `pasteImageInternal.nameSuffix`
 
     The string append to the image name.
 
@@ -150,7 +152,7 @@ code --install-extension paste-image-internal-1.0.4-internal.4.vsix
 
     Default is `""`.
 
-- `pasteImage.insertPattern`
+- `pasteImageInternal.insertPattern`
 
     The pattern of string that would be pasted to text.
     
@@ -159,7 +161,7 @@ code --install-extension paste-image-internal-1.0.4-internal.4.vsix
     
     You can use the following variables:
 
-    - `${imageFilePath}`: the image file path, with `pasteImage.prefix`, `pasteImage.suffix`, and url encoded.
+    - `${imageFilePath}`: the image file path, with `pasteImageInternal.prefix`, `pasteImageInternal.suffix`, and url encoded.
     - `${imageOriginalFilePath}`: the image file path.
     - `${imageFileName}`:  the image file name with ext.
     - `${imageFileNameWithoutExt}`: the image file name without ext.
@@ -172,11 +174,11 @@ code --install-extension paste-image-internal-1.0.4-internal.4.vsix
 
     Default is `${imageSyntaxPrefix}${imageFilePath}${imageSyntaxSuffix}`.
 
-- `pasteImage.showFilePathConfirmInputBox`
+- `pasteImageInternal.showFilePathConfirmInputBox`
 
     Enabling this `boolean` setting will make Paste Image ask you to confirm the file path(or file name). This is useful if you want to change the file path of the image you are currently pasting. Default is `false`.
 
-- `pasteImage.filePathConfirmInputBoxMode`
+- `pasteImageInternal.filePathConfirmInputBoxMode`
 
     - `fullPath`: show full path in inputBox, so you can change the path or name. Default value.
     - `onlyName`: show only file name in inputBox, so it's easy to change name.
@@ -190,42 +192,42 @@ blog/source/_posts  (articles)
 blog/source/img     (images)
 ```
 
-I want to save all image in `blog/source/img`, and insert image url to article. And hexo will generate `blog/source/` as the website root, so the image url should be like `/img/xxx.png`. So I can config pasteImage in `blog/.vscode/setting.json` like this:
+I want to save all image in `blog/source/img`, and insert image url to article. And hexo will generate `blog/source/` as the website root, so the image url should be like `/img/xxx.png`. So I can config Paste Image Internal in `blog/.vscode/setting.json` like this:
 
 ```
-"pasteImage.path": "${projectRoot}/source/img",
-"pasteImage.basePath": "${projectRoot}/source",
-"pasteImage.forceUnixStyleSeparator": true,
-"pasteImage.prefix": "/"
+"pasteImageInternal.path": "${projectRoot}/source/img",
+"pasteImageInternal.basePath": "${projectRoot}/source",
+"pasteImageInternal.forceUnixStyleSeparator": true,
+"pasteImageInternal.prefix": "/"
 ```
 
 If you want to save image in separate directory:
 
 ```
-"pasteImage.path": "${projectRoot}/source/img/${currentFileNameWithoutExt}",
-"pasteImage.basePath": "${projectRoot}/source",
-"pasteImage.forceUnixStyleSeparator": true,
-"pasteImage.prefix": "/"
+"pasteImageInternal.path": "${projectRoot}/source/img/${currentFileNameWithoutExt}",
+"pasteImageInternal.basePath": "${projectRoot}/source",
+"pasteImageInternal.forceUnixStyleSeparator": true,
+"pasteImageInternal.prefix": "/"
 ```
 
 If you want to save image with article name as prefix:
 
 ```
-"pasteImage.namePrefix": "${currentFileNameWithoutExt}_",
-"pasteImage.path": "${projectRoot}/source/img",
-"pasteImage.basePath": "${projectRoot}/source",
-"pasteImage.forceUnixStyleSeparator": true,
-"pasteImage.prefix": "/"
+"pasteImageInternal.namePrefix": "${currentFileNameWithoutExt}_",
+"pasteImageInternal.path": "${projectRoot}/source/img",
+"pasteImageInternal.basePath": "${projectRoot}/source",
+"pasteImageInternal.forceUnixStyleSeparator": true,
+"pasteImageInternal.prefix": "/"
 ```
 
 If you want to use html in markdown:
 
 ```
-"pasteImage.insertPattern": "<img>${imageFileName}</img>"
-"pasteImage.path": "${projectRoot}/source/img",
-"pasteImage.basePath": "${projectRoot}/source",
-"pasteImage.forceUnixStyleSeparator": true,
-"pasteImage.prefix": "/"
+"pasteImageInternal.insertPattern": "<img>${imageFileName}</img>"
+"pasteImageInternal.path": "${projectRoot}/source/img",
+"pasteImageInternal.basePath": "${projectRoot}/source",
+"pasteImageInternal.forceUnixStyleSeparator": true,
+"pasteImageInternal.prefix": "/"
 ```
 
 ## Format
@@ -234,7 +236,7 @@ If you want to use html in markdown:
 
 If you selected some text in editor, then extension will use it as the image file name. **The selected text can be a sub path like `subFolder/subFolder2/nameYouWant`.**
 
-If not the image will be saved in this format: "Y-MM-DD-HH-mm-ss.png". You can config default image file name by `pasteImage.defaultName`.
+If not the image will be saved in this format: "Y-MM-DD-HH-mm-ss.png". You can config default image file name by `pasteImageInternal.defaultName`.
 
 ### File link format
 
@@ -244,7 +246,7 @@ When you editing a asciidoc, it will pasted as asciidoc image link format `image
 
 In other file, it just paste the image's path.
 
-Now you can use configuration `pasteImage.insertPattern` to config the format of file link and the alt text.
+Now you can use configuration `pasteImageInternal.insertPattern` to config the format of file link and the alt text.
 
 ## Contact
 

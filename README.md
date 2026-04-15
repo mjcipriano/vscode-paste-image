@@ -39,11 +39,11 @@ npx vsce package
 
 ### Release from GitHub Actions
 
-Release tags must match the package version in `package.json` with a leading `v`, for example `v1.0.4-internal.3`.
+Merging to `master` automatically runs the release workflow. The workflow bumps the `internal.N` version in `package.json`, updates the VSIX filename references in this README, runs the unit tests, packages the VSIX, commits the version bump back to `master`, creates the matching tag, creates or updates the GitHub Release, and attaches the generated VSIX file.
 
-When a matching tag is pushed, GitHub Actions runs the unit tests, packages the VSIX, creates or updates the GitHub Release for the tag, and attaches the generated VSIX file.
+Release tags use the package version with a leading `v`, for example `v1.0.4-internal.3`.
 
-The release workflow can also be run manually from GitHub Actions with an existing tag to backfill a missing release asset.
+The release workflow can also be run from GitHub Actions with an existing tag to backfill a missing release asset. In that mode, the tag must match the version already in `package.json`.
 
 ### Install from VSIX
 

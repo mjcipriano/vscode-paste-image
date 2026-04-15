@@ -52,9 +52,14 @@ export class Paster {
     static CONFIG_SECTION = "pasteImageInternal";
 
     static PATH_VARIABLE_CURRNET_FILE_DIR = /\$\{currentFileDir\}/g;
+    static PATH_VARIABLE_CURRNET_FILE_DIR_NAME = /\$\{currentFileDirName\}/g;
+    static PATH_VARIABLE_CURRNET_FILE_PARENT_DIR = /\$\{currentFileParentDir\}/g;
+    static PATH_VARIABLE_CURRNET_FILE_PARENT_DIR_NAME = /\$\{currentFileParentDirName\}/g;
     static PATH_VARIABLE_PROJECT_ROOT = /\$\{projectRoot\}/g;
+    static PATH_VARIABLE_PROJECT_ROOT_NAME = /\$\{projectRootName\}/g;
     static PATH_VARIABLE_CURRNET_FILE_NAME = /\$\{currentFileName\}/g;
     static PATH_VARIABLE_CURRNET_FILE_NAME_WITHOUT_EXT = /\$\{currentFileNameWithoutExt\}/g;
+    static PATH_VARIABLE_CURRNET_FILE_EXT = /\$\{currentFileExt\}/g;
 
     static PATH_VARIABLE_IMAGE_FILE_PATH = /\$\{imageFilePath\}/g;
     static PATH_VARIABLE_IMAGE_ORIGINAL_FILE_PATH = /\$\{imageOriginalFilePath\}/g;
@@ -495,14 +500,22 @@ export class Paster {
 
     public static replacePathVariable(pathStr: string, projectRoot: string, curFilePath: string, postFunction: (string) => string = (x) => x): string {
         let currentFileDir = path.dirname(curFilePath);
+        let currentFileDirName = path.basename(currentFileDir);
+        let currentFileParentDir = path.dirname(currentFileDir);
+        let currentFileParentDirName = path.basename(currentFileParentDir);
         let ext = path.extname(curFilePath);
         let fileName = path.basename(curFilePath);
         let fileNameWithoutExt = path.basename(curFilePath, ext);
 
         pathStr = pathStr.replace(this.PATH_VARIABLE_PROJECT_ROOT, postFunction(projectRoot));
+        pathStr = pathStr.replace(this.PATH_VARIABLE_PROJECT_ROOT_NAME, postFunction(path.basename(projectRoot)));
         pathStr = pathStr.replace(this.PATH_VARIABLE_CURRNET_FILE_DIR, postFunction(currentFileDir));
+        pathStr = pathStr.replace(this.PATH_VARIABLE_CURRNET_FILE_DIR_NAME, postFunction(currentFileDirName));
+        pathStr = pathStr.replace(this.PATH_VARIABLE_CURRNET_FILE_PARENT_DIR, postFunction(currentFileParentDir));
+        pathStr = pathStr.replace(this.PATH_VARIABLE_CURRNET_FILE_PARENT_DIR_NAME, postFunction(currentFileParentDirName));
         pathStr = pathStr.replace(this.PATH_VARIABLE_CURRNET_FILE_NAME, postFunction(fileName));
         pathStr = pathStr.replace(this.PATH_VARIABLE_CURRNET_FILE_NAME_WITHOUT_EXT, postFunction(fileNameWithoutExt));
+        pathStr = pathStr.replace(this.PATH_VARIABLE_CURRNET_FILE_EXT, postFunction(ext));
         return pathStr;
     }
 

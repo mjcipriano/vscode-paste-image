@@ -59,16 +59,31 @@ code --install-extension paste-image-internal-1.0.4-internal.5.vsix
 
 ## Config
 
+Current-file variables can be used in `pasteImageInternal.defaultName`, `pasteImageInternal.path`, `pasteImageInternal.basePath`, `pasteImageInternal.namePrefix`, `pasteImageInternal.nameSuffix`, and `pasteImageInternal.insertPattern`:
+
+- `${projectRoot}`: the path of the project opened in VS Code.
+- `${projectRootName}`: the name of the project root directory.
+- `${currentFileDir}`: the path of the directory that contains the current editing file.
+- `${currentFileDirName}`: the name of the directory that contains the current editing file.
+- `${currentFileParentDir}`: the path of the parent directory of `${currentFileDir}`.
+- `${currentFileParentDirName}`: the name of the parent directory of `${currentFileDir}`.
+- `${currentFileName}`: the current file name with extension.
+- `${currentFileNameWithoutExt}`: the current file name without extension.
+- `${currentFileExt}`: the current file extension, including the leading dot.
+
+For example, to prepend only the current directory name to pasted image filenames:
+
+```
+"pasteImageInternal.namePrefix": "${currentFileDirName}_"
+```
+
 - `pasteImageInternal.defaultName`
 
     The default image file name.
 
     The value of this config will be pass to the 'format' function of moment library(a js time manipulation library), you can read document https://momentjs.com/docs/#/displaying/format/ for advanced usage.
 
-    And you can use variable:
-
-    - `${currentFileName}`: the current file name with ext.
-    - `${currentFileNameWithoutExt}`: the current file name without ext.
+    You can use current-file variables.
 
     Default value is `Y-MM-DD-HH-mm-ss`.
 
@@ -76,12 +91,7 @@ code --install-extension paste-image-internal-1.0.4-internal.5.vsix
 
     The destination to save image file.
     
-    You can use variable:
-    
-    - `${currentFileDir}`: the path of directory that contain current editing file. 
-    - `${projectRoot}`: the path of the project opened in vscode.
-    - `${currentFileName}`: the current file name with ext.
-    - `${currentFileNameWithoutExt}`: the current file name without ext.
+    You can use current-file variables.
 
     Default value is `${currentFileDir}`.
 
@@ -89,12 +99,7 @@ code --install-extension paste-image-internal-1.0.4-internal.5.vsix
 
     The base path of image url.
     
-    You can use variable:
-    
-    - `${currentFileDir}`: the path of directory that contain current editing file. 
-    - `${projectRoot}`: the path of the project opened in vscode.
-    - `${currentFileName}`: the current file name with ext.
-    - `${currentFileNameWithoutExt}`: the current file name without ext.
+    You can use current-file variables.
 
     Default value is `${currentFileDir}`.
 
@@ -130,12 +135,7 @@ code --install-extension paste-image-internal-1.0.4-internal.5.vsix
 
     The string prepend to the image file name.
 
-    You can use variable:
-    
-    - `${currentFileDir}`: the path of directory that contain current editing file. 
-    - `${projectRoot}`: the path of the project opened in vscode.
-    - `${currentFileName}`: the current file name with ext.
-    - `${currentFileNameWithoutExt}`: the current file name without ext.
+    You can use current-file variables.
 
     Default is `""`.
 
@@ -143,12 +143,7 @@ code --install-extension paste-image-internal-1.0.4-internal.5.vsix
 
     The string append to the image name.
 
-    You can use variable:
-    
-    - `${currentFileDir}`: the path of directory that contain current editing file. 
-    - `${projectRoot}`: the path of the project opened in vscode.
-    - `${currentFileName}`: the current file name with ext.
-    - `${currentFileNameWithoutExt}`: the current file name without ext.
+    You can use current-file variables.
 
     Default is `""`.
 
@@ -165,10 +160,7 @@ code --install-extension paste-image-internal-1.0.4-internal.5.vsix
     - `${imageOriginalFilePath}`: the image file path.
     - `${imageFileName}`:  the image file name with ext.
     - `${imageFileNameWithoutExt}`: the image file name without ext.
-    - `${currentFileDir}`: the path of directory that contain current editing file. 
-    - `${projectRoot}`: the path of the project opened in vscode.
-    - `${currentFileName}`: the current file name with ext.
-    - `${currentFileNameWithoutExt}`: the current file name without ext.
+    - All current-file variables listed above.
     - `${imageSyntaxPrefix}`: in markdown file it would be <code>![](</code>, in asciidoc file it would be <code>image::</code>, in other file it would be empty string
     - `${imageSyntaxSuffix}`: in markdown file it would be <code>)</code>, in asciidoc file it would be <code>[]</code>, in other file it would be empty string
 

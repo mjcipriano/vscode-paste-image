@@ -43,18 +43,18 @@ npx vsce package
 
 Merging to `master` automatically runs the release workflow. The workflow bumps the `internal.N` version in `package.json`, updates the VSIX filename references in this README, runs the unit tests, packages the VSIX, commits the version bump back to `master`, creates the matching tag, creates or updates the GitHub Release, and attaches the generated VSIX file.
 
-Release tags use the package version with a leading `v`, for example `v1.0.4-internal.5`.
+Release tags use the package version with a leading `v`, for example `v1.0.4-internal.6`.
 
 The release workflow can also be run from GitHub Actions with an existing tag to backfill a missing release asset. In that mode, the tag must match the version already in `package.json`.
 
 ### Install from VSIX
 
-In VS Code, open the Extensions view, choose `...`, select `Install from VSIX...`, and pick the generated `paste-image-internal-1.0.4-internal.5.vsix` file.
+In VS Code, open the Extensions view, choose `...`, select `Install from VSIX...`, and pick the generated `paste-image-internal-1.0.4-internal.6.vsix` file.
 
 You can also install it from the command line:
 
 ```
-code --install-extension paste-image-internal-1.0.4-internal.5.vsix
+code --install-extension paste-image-internal-1.0.4-internal.6.vsix
 ```
 
 ## Config

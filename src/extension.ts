@@ -2,10 +2,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as fse from 'fs-extra';
 import { spawn } from 'child_process';
-import * as moment from 'moment';
-import * as upath from 'upath';
+import moment = require('moment');
 
 export class Logger {
     static channel: vscode.OutputChannel;
@@ -28,6 +26,18 @@ export class Logger {
     }
 }
 
+function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    return String(error);
+}
+
+function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
+    return error instanceof Error;
+}
+
 export function activate(context: vscode.ExtensionContext) {
     Logger.channel = vscode.window.createOutputChannel("PasteImageInternal")
     context.subscriptions.push(Logger.channel);
@@ -38,7 +48,7 @@ export function activate(context: vscode.ExtensionContext) {
         try {
             Paster.paste();
         } catch (e) {
-            Logger.showErrorMessage(e)
+            Logger.showErrorMessage(getErrorMessage(e))
         }
     });
 
@@ -279,7 +289,7 @@ export class Paster {
                         reject(new PluginError(`The image dest directory '${imageDir}' is a file. Please check your 'pasteImageInternal.path' config.`))
                     }
                 } else if (err.code == "ENOENT") {
-                    fse.ensureDir(imageDir, (err) => {
+                    fs.mkdir(imageDir, { recursive: true }, (err) => {
                         if (err) {
                             reject(err);
                             return;
@@ -318,7 +328,7 @@ export class Paster {
 
             let ascript = spawn('osascript', [scriptPath, imagePath]);
             ascript.on('error', function (e) {
-                Logger.showErrorMessage(e);
+                Logger.showErrorMessage(getErrorMessage(e));
             });
             ascript.on('exit', function (code, signal) {
                 // console.log('exit',code,signal);
@@ -337,7 +347,7 @@ export class Paster {
 
             let ascript = spawn('sh', [scriptPath, imagePath]);
             ascript.on('error', function (e) {
-                Logger.showErrorMessage(e);
+                Logger.showErrorMessage(getErrorMessage(e));
             });
             ascript.on('exit', function (code, signal) {
                 // console.log('exit',code,signal);
@@ -420,10 +430,10 @@ export class Paster {
         let stderr = "";
 
         powershell.on('error', function (e) {
-            if (e.code == "ENOENT") {
+            if (isErrnoException(e) && e.code == "ENOENT") {
                 Logger.showErrorMessage(`The powershell command is not in you PATH environment variables. Please add it and retry.`);
             } else {
-                Logger.showErrorMessage(e);
+                Logger.showErrorMessage(getErrorMessage(e));
             }
         });
         powershell.on('exit', function (code, signal) {
@@ -457,7 +467,7 @@ export class Paster {
         }
 
         if (forceUnixStyleSeparator) {
-            imageFilePath = upath.normalize(imageFilePath);
+            imageFilePath = imageFilePath.replace(/\\/g, '/');
         }
 
         let originalImagePath = imageFilePath;

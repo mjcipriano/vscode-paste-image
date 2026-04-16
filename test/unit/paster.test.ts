@@ -1,3 +1,4 @@
+import { afterEach, beforeEach, describe, it } from 'node:test';
 import * as assert from 'assert';
 
 var Module = require('module');
@@ -74,13 +75,13 @@ var Paster = extension.Paster;
 var Logger = extension.Logger;
 var PasterAny = <any>Paster;
 
-suite('extension activation', () => {
-    setup(() => {
+describe('extension activation', () => {
+    beforeEach(() => {
         resetMessages();
         registeredCommands = [];
     });
 
-    test('registers the internal paste image command', () => {
+    it('registers the internal paste image command', () => {
         var context = { subscriptions: [] };
 
         extension.activate(context);
@@ -91,40 +92,40 @@ suite('extension activation', () => {
     });
 });
 
-suite('Paster configuration helpers', () => {
-    setup(() => {
+describe('Paster configuration helpers', () => {
+    beforeEach(() => {
         resetConfigurations();
     });
 
-    test('uses internal configuration values', () => {
+    it('uses internal configuration values', () => {
         setConfigValue('pasteImageInternal', 'path', 'internal-images', true);
 
         assert.equal(PasterAny.getConfigValue('path'), 'internal-images');
     });
 
-    test('does not read legacy configuration values', () => {
+    it('does not read legacy configuration values', () => {
         setConfigValue('pasteImageInternal', 'path', '${currentFileDir}', false);
         setConfigValue('pasteImage', 'path', 'legacy-images', true);
 
         assert.equal(PasterAny.getConfigValue('path'), '${currentFileDir}');
     });
 
-    test('uses internal defaults', () => {
+    it('uses internal defaults', () => {
         setConfigValue('pasteImageInternal', 'path', '${currentFileDir}', false);
 
         assert.equal(PasterAny.getConfigValue('path'), '${currentFileDir}');
     });
 });
 
-suite('Paster path helpers', () => {
-    setup(() => {
+describe('Paster path helpers', () => {
+    beforeEach(() => {
         resetPasterConfig();
         resetMessages();
         nextInputBoxValue = null;
         inputBoxOptions = [];
     });
 
-    test('replacePathVariable substitutes file and project tokens', () => {
+    it('replacePathVariable substitutes file and project tokens', () => {
         var result = Paster.replacePathVariable(
             [
                 '${projectRoot}',
@@ -145,60 +146,90 @@ suite('Paster path helpers', () => {
         assert.equal(result, '[/workspace]|[workspace]|[/workspace/docs/api]|[api]|[/workspace/docs]|[docs]|[guide.md]|[guide]|[.md]');
     });
 
-    test('getImagePath can prepend the current directory name to the image filename', (done) => {
+    it('getImagePath can prepend the current directory name to the image filename', async () => {
         Paster.namePrefixConfig = Paster.replacePathVariable('${currentFileDirName}_', '/workspace', '/workspace/docs/api/guide.md');
 
-        Paster.getImagePath('/workspace/docs/api/guide.md', 'diagram', 'images', false, 'fullPath', function (err, imagePath) {
-            assert.ifError(err);
-            assert.equal(imagePath, path.join('/workspace/docs/api/images', 'api_diagram.png'));
-            done();
+        await new Promise<void>((resolve, reject) => {
+            Paster.getImagePath('/workspace/docs/api/guide.md', 'diagram', 'images', false, 'fullPath', function (err, imagePath) {
+                try {
+                    assert.ifError(err);
+                    assert.equal(imagePath, path.join('/workspace/docs/api/images', 'api_diagram.png'));
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
         });
     });
 
-    test('getImagePath builds a path beside the current file for relative image folders', (done) => {
+    it('getImagePath builds a path beside the current file for relative image folders', async () => {
         Paster.namePrefixConfig = 'pre-';
         Paster.nameSuffixConfig = '-post';
 
-        Paster.getImagePath('/workspace/docs/guide.md', 'diagram', 'images', false, 'fullPath', function (err, imagePath) {
-            assert.ifError(err);
-            assert.equal(imagePath, path.join('/workspace/docs/images', 'pre-diagram-post.png'));
-            done();
+        await new Promise<void>((resolve, reject) => {
+            Paster.getImagePath('/workspace/docs/guide.md', 'diagram', 'images', false, 'fullPath', function (err, imagePath) {
+                try {
+                    assert.ifError(err);
+                    assert.equal(imagePath, path.join('/workspace/docs/images', 'pre-diagram-post.png'));
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
         });
     });
 
-    test('getImagePath respects absolute image folders', (done) => {
-        Paster.getImagePath('/workspace/docs/guide.md', 'diagram', '/var/tmp/images', false, 'fullPath', function (err, imagePath) {
-            assert.ifError(err);
-            assert.equal(imagePath, path.join('/var/tmp/images', 'diagram.png'));
-            done();
+    it('getImagePath respects absolute image folders', async () => {
+        await new Promise<void>((resolve, reject) => {
+            Paster.getImagePath('/workspace/docs/guide.md', 'diagram', '/var/tmp/images', false, 'fullPath', function (err, imagePath) {
+                try {
+                    assert.ifError(err);
+                    assert.equal(imagePath, path.join('/var/tmp/images', 'diagram.png'));
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
         });
     });
 
-    test('getImagePath confirms only the filename when configured for onlyName mode', (done) => {
+    it('getImagePath confirms only the filename when configured for onlyName mode', async () => {
         nextInputBoxValue = 'custom-name';
 
-        Paster.getImagePath('/workspace/docs/guide.md', 'diagram', 'images', true, 'onlyName', function (err, imagePath) {
-            assert.ifError(err);
-            assert.equal(inputBoxOptions.length, 1);
-            assert.equal(inputBoxOptions[0].value, 'diagram.png');
-            assert.equal(imagePath, path.join('/workspace/docs/images', 'custom-name.png'));
-            done();
+        await new Promise<void>((resolve, reject) => {
+            Paster.getImagePath('/workspace/docs/guide.md', 'diagram', 'images', true, 'onlyName', function (err, imagePath) {
+                try {
+                    assert.ifError(err);
+                    assert.equal(inputBoxOptions.length, 1);
+                    assert.equal(inputBoxOptions[0].value, 'diagram.png');
+                    assert.equal(imagePath, path.join('/workspace/docs/images', 'custom-name.png'));
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
         });
     });
 
-    test('getImagePath confirms the full path when configured for fullPath mode', (done) => {
+    it('getImagePath confirms the full path when configured for fullPath mode', async () => {
         nextInputBoxValue = '/tmp/custom-name';
 
-        Paster.getImagePath('/workspace/docs/guide.md', 'diagram', 'images', true, 'fullPath', function (err, imagePath) {
-            assert.ifError(err);
-            assert.equal(inputBoxOptions.length, 1);
-            assert.equal(inputBoxOptions[0].value, path.join('/workspace/docs/images', 'diagram.png'));
-            assert.equal(imagePath, '/tmp/custom-name.png');
-            done();
+        await new Promise<void>((resolve, reject) => {
+            Paster.getImagePath('/workspace/docs/guide.md', 'diagram', 'images', true, 'fullPath', function (err, imagePath) {
+                try {
+                    assert.ifError(err);
+                    assert.equal(inputBoxOptions.length, 1);
+                    assert.equal(inputBoxOptions[0].value, path.join('/workspace/docs/images', 'diagram.png'));
+                    assert.equal(imagePath, '/tmp/custom-name.png');
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
         });
     });
 
-    test('renderFilePath creates markdown syntax with relative URL-safe paths', () => {
+    it('renderFilePath creates markdown syntax with relative URL-safe paths', () => {
         Paster.encodePathConfig = 'urlEncodeSpace';
         Paster.insertPatternConfig = '${imageSyntaxPrefix}${imageFilePath}${imageSyntaxSuffix}';
 
@@ -207,7 +238,7 @@ suite('Paster path helpers', () => {
         assert.equal(result, '![](docs/my%20image.png)');
     });
 
-    test('renderFilePath creates asciidoc syntax', () => {
+    it('renderFilePath creates asciidoc syntax', () => {
         Paster.encodePathConfig = 'none';
         Paster.insertPatternConfig = '${imageSyntaxPrefix}${imageFilePath}${imageSyntaxSuffix}';
 
@@ -216,7 +247,7 @@ suite('Paster path helpers', () => {
         assert.equal(result, 'image::docs/diagram.png[]');
     });
 
-    test('renderFilePath supports custom insert patterns and file name tokens', () => {
+    it('renderFilePath supports custom insert patterns and file name tokens', () => {
         Paster.encodePathConfig = 'urlEncode';
         Paster.insertPatternConfig = '${imageFileNameWithoutExt}|${imageFileName}|${imageOriginalFilePath}|${imageFilePath}';
 
@@ -226,23 +257,23 @@ suite('Paster path helpers', () => {
     });
 });
 
-suite('Paster save and paste', () => {
+describe('Paster save and paste', () => {
     var originalCreateImageDirWithImagePath: any;
     var originalSaveClipboardImageToFileAndGetPath: any;
 
-    setup(() => {
+    beforeEach(() => {
         resetPasterConfig();
         resetMessages();
         originalCreateImageDirWithImagePath = PasterAny.createImageDirWithImagePath;
         originalSaveClipboardImageToFileAndGetPath = PasterAny.saveClipboardImageToFileAndGetPath;
     });
 
-    teardown(() => {
+    afterEach(() => {
         PasterAny.createImageDirWithImagePath = originalCreateImageDirWithImagePath;
         PasterAny.saveClipboardImageToFileAndGetPath = originalSaveClipboardImageToFileAndGetPath;
     });
 
-    test('inserts rendered image syntax after saving clipboard image', (done) => {
+    it('inserts rendered image syntax after saving clipboard image', async () => {
         var editor = createEditor('markdown', true);
         Paster.basePathConfig = '/workspace';
         Paster.insertPatternConfig = '${imageSyntaxPrefix}${imageFilePath}${imageSyntaxSuffix}';
@@ -258,14 +289,12 @@ suite('Paster save and paste', () => {
 
         Paster.saveAndPaste(editor, '/workspace/docs/my image.png');
 
-        setTimeout(function () {
-            assert.equal(editor.insertedText, '![](docs/my%20image.png)');
-            assert.equal(editor.replacedText, null);
-            done();
-        }, 0);
+        await waitForAsyncWork();
+        assert.equal(editor.insertedText, '![](docs/my%20image.png)');
+        assert.equal(editor.replacedText, null);
     });
 
-    test('does not edit when the clipboard does not contain an image', (done) => {
+    it('does not edit when the clipboard does not contain an image', async () => {
         var editor = createEditor('markdown', true);
 
         PasterAny.createImageDirWithImagePath = function (imagePath: string) {
@@ -277,14 +306,12 @@ suite('Paster save and paste', () => {
 
         Paster.saveAndPaste(editor, '/workspace/docs/image.png');
 
-        setTimeout(function () {
-            assert.equal(editor.insertedText, null);
-            assert.equal(infoMessages[0], 'There is not an image in the clipboard.');
-            done();
-        }, 0);
+        await waitForAsyncWork();
+        assert.equal(editor.insertedText, null);
+        assert.equal(infoMessages[0], 'There is not an image in the clipboard.');
     });
 
-    test('replaces selection when the editor has selected text', (done) => {
+    it('replaces selection when the editor has selected text', async () => {
         var editor = createEditor('markdown', false);
         Paster.basePathConfig = '/workspace';
 
@@ -297,18 +324,16 @@ suite('Paster save and paste', () => {
 
         Paster.saveAndPaste(editor, '/workspace/docs/image.png');
 
-        setTimeout(function () {
-            assert.equal(editor.insertedText, null);
-            assert.equal(editor.replacedText, '![](docs/image.png)');
-            done();
-        }, 0);
+        await waitForAsyncWork();
+        assert.equal(editor.insertedText, null);
+        assert.equal(editor.replacedText, '![](docs/image.png)');
     });
 });
 
-suite('Paster WSL and subprocess helpers', () => {
+describe('Paster WSL and subprocess helpers', () => {
     var spawnCalls: any[];
 
-    setup(() => {
+    beforeEach(() => {
         resetPasterConfig();
         resetMessages();
         spawnCalls = [];
@@ -321,7 +346,7 @@ suite('Paster WSL and subprocess helpers', () => {
         delete process.env['WSL_INTEROP'];
     });
 
-    teardown(() => {
+    afterEach(() => {
         childProcess.spawn = originalSpawn;
         fs.readFileSync = originalReadFileSync;
         if (originalPlatformDescriptor) {
@@ -331,13 +356,13 @@ suite('Paster WSL and subprocess helpers', () => {
         restoreEnv('WSL_INTEROP', originalWslInterop);
     });
 
-    test('isWsl detects WSL environment variables', () => {
+    it('isWsl detects WSL environment variables', () => {
         process.env['WSL_DISTRO_NAME'] = 'Ubuntu';
 
         assert.equal(PasterAny.isWsl(), true);
     });
 
-    test('isWsl detects Microsoft kernel release text', () => {
+    it('isWsl detects Microsoft kernel release text', () => {
         fs.readFileSync = function (filePath: string, encoding: string) {
             assert.equal(filePath, '/proc/sys/kernel/osrelease');
             assert.equal(encoding, 'utf8');
@@ -347,7 +372,7 @@ suite('Paster WSL and subprocess helpers', () => {
         assert.equal(PasterAny.isWsl(), true);
     });
 
-    test('isWsl returns false when no WSL signals exist', () => {
+    it('isWsl returns false when no WSL signals exist', () => {
         fs.readFileSync = function () {
             throw new Error('missing osrelease');
         };
@@ -355,38 +380,51 @@ suite('Paster WSL and subprocess helpers', () => {
         assert.equal(PasterAny.isWsl(), false);
     });
 
-    test('convertWslPathToWindowsPath resolves trimmed stdout', (done) => {
-        PasterAny.convertWslPathToWindowsPath('/workspace/file.png', 'image output path', function (windowsPath: string) {
-            assert.equal(windowsPath, 'C:\\workspace\\file.png');
-            done();
+    it('convertWslPathToWindowsPath resolves trimmed stdout', async () => {
+        const conversion = new Promise<void>((resolve, reject) => {
+            PasterAny.convertWslPathToWindowsPath('/workspace/file.png', 'image output path', function (windowsPath: string) {
+                try {
+                    assert.equal(windowsPath, 'C:\\workspace\\file.png');
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
         });
 
         assert.equal(spawnCalls.length, 1);
         assert.equal(spawnCalls[0].command, 'wslpath');
         assert.deepEqual(spawnCalls[0].args, ['-w', '/workspace/file.png']);
-        spawnCalls[0].proc.stdout.emit('data', new Buffer('C:\\workspace\\file.png\r\n'));
+        spawnCalls[0].proc.stdout.emit('data', Buffer.from('C:\\workspace\\file.png\r\n'));
         spawnCalls[0].proc.emit('close', 0);
+        await conversion;
     });
 
-    test('convertWslPathToWindowsPath reports conversion failures', () => {
+    it('convertWslPathToWindowsPath reports conversion failures', () => {
         var callbackCalled = false;
 
         PasterAny.convertWslPathToWindowsPath('/workspace/file.png', 'image output path', function () {
             callbackCalled = true;
         });
 
-        spawnCalls[0].proc.stderr.emit('data', new Buffer('bad path'));
+        spawnCalls[0].proc.stderr.emit('data', Buffer.from('bad path'));
         spawnCalls[0].proc.emit('close', 1);
 
         assert.equal(callbackCalled, false);
         assert.equal(errorMessages[0], 'Failed to convert image output path for PowerShell. message=bad path');
     });
 
-    test('runPowerShellClipboardScript uses stable noninteractive PowerShell arguments', (done) => {
-        PasterAny.runPowerShellClipboardScript('powershell.exe', 'C:\\script.ps1', 'C:\\out.png', '/workspace/out.png', function (imagePath: string, result: string) {
-            assert.equal(imagePath, '/workspace/out.png');
-            assert.equal(result, 'C:\\out.png');
-            done();
+    it('runPowerShellClipboardScript uses stable noninteractive PowerShell arguments', async () => {
+        const run = new Promise<void>((resolve, reject) => {
+            PasterAny.runPowerShellClipboardScript('powershell.exe', 'C:\\script.ps1', 'C:\\out.png', '/workspace/out.png', function (imagePath: string, result: string) {
+                try {
+                    assert.equal(imagePath, '/workspace/out.png');
+                    assert.equal(result, 'C:\\out.png');
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
         });
 
         assert.equal(spawnCalls.length, 1);
@@ -401,25 +439,26 @@ suite('Paster WSL and subprocess helpers', () => {
             '-File', 'C:\\script.ps1',
             'C:\\out.png'
         ]);
-        spawnCalls[0].proc.stdout.emit('data', new Buffer('C:\\out.png\r\n'));
+        spawnCalls[0].proc.stdout.emit('data', Buffer.from('C:\\out.png\r\n'));
         spawnCalls[0].proc.emit('close', 0);
+        await run;
     });
 
-    test('runPowerShellClipboardScript reports nonzero exits with stderr', () => {
+    it('runPowerShellClipboardScript reports nonzero exits with stderr', () => {
         var callbackCalled = false;
 
         PasterAny.runPowerShellClipboardScript('powershell.exe', 'C:\\script.ps1', 'C:\\out.png', '/workspace/out.png', function () {
             callbackCalled = true;
         });
 
-        spawnCalls[0].proc.stderr.emit('data', new Buffer('clipboard error'));
+        spawnCalls[0].proc.stderr.emit('data', Buffer.from('clipboard error'));
         spawnCalls[0].proc.emit('close', 1);
 
         assert.equal(callbackCalled, false);
         assert.equal(errorMessages[0], 'Failed to save clipboard image. message=clipboard error');
     });
 
-    test('saveClipboardImageToFileWithWslPowerShell converts script and output paths before invoking PowerShell', () => {
+    it('saveClipboardImageToFileWithWslPowerShell converts script and output paths before invoking PowerShell', () => {
         var convertedPaths: any[] = [];
         var runArgs: any[] = null;
         var originalConvert = PasterAny.convertWslPathToWindowsPath;
@@ -447,7 +486,7 @@ suite('Paster WSL and subprocess helpers', () => {
         assert.equal(runArgs[3], '/workspace/docs/image.png');
     });
 
-    test('saveClipboardImageToFileAndGetPath routes WSL Linux through Windows PowerShell', (done) => {
+    it('saveClipboardImageToFileAndGetPath routes WSL Linux through Windows PowerShell', async () => {
         var originalIsWsl = PasterAny.isWsl;
         var originalWslSave = PasterAny.saveClipboardImageToFileWithWslPowerShell;
 
@@ -458,36 +497,49 @@ suite('Paster WSL and subprocess helpers', () => {
             cb(imagePath, imagePath);
         };
 
-        PasterAny.saveClipboardImageToFileAndGetPath('/workspace/docs/image.png', function (imagePath: string, result: string) {
-            PasterAny.isWsl = originalIsWsl;
-            PasterAny.saveClipboardImageToFileWithWslPowerShell = originalWslSave;
-            assert.equal(imagePath, '/workspace/docs/image.png');
-            assert.equal(result, '/workspace/docs/image.png');
-            assert.equal(spawnCalls.length, 0);
-            done();
+        await new Promise<void>((resolve, reject) => {
+            PasterAny.saveClipboardImageToFileAndGetPath('/workspace/docs/image.png', function (imagePath: string, result: string) {
+                try {
+                    PasterAny.isWsl = originalIsWsl;
+                    PasterAny.saveClipboardImageToFileWithWslPowerShell = originalWslSave;
+                    assert.equal(imagePath, '/workspace/docs/image.png');
+                    assert.equal(result, '/workspace/docs/image.png');
+                    assert.equal(spawnCalls.length, 0);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
         });
     });
 
-    test('saveClipboardImageToFileAndGetPath keeps non-WSL Linux on xclip script', (done) => {
+    it('saveClipboardImageToFileAndGetPath keeps non-WSL Linux on xclip script', async () => {
         var originalIsWsl = PasterAny.isWsl;
 
         setPlatform('linux');
         PasterAny.isWsl = function () { return false; };
 
-        PasterAny.saveClipboardImageToFileAndGetPath('/workspace/docs/image.png', function (imagePath: string, result: string) {
-            PasterAny.isWsl = originalIsWsl;
-            assert.equal(imagePath, '/workspace/docs/image.png');
-            assert.equal(result, '/workspace/docs/image.png');
-            done();
+        const save = new Promise<void>((resolve, reject) => {
+            PasterAny.saveClipboardImageToFileAndGetPath('/workspace/docs/image.png', function (imagePath: string, result: string) {
+                try {
+                    PasterAny.isWsl = originalIsWsl;
+                    assert.equal(imagePath, '/workspace/docs/image.png');
+                    assert.equal(result, '/workspace/docs/image.png');
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
         });
 
         assert.equal(spawnCalls.length, 1);
         assert.equal(spawnCalls[0].command, 'sh');
         assert.equal(spawnCalls[0].args[1], '/workspace/docs/image.png');
-        spawnCalls[0].proc.stdout.emit('data', new Buffer('/workspace/docs/image.png\n'));
+        spawnCalls[0].proc.stdout.emit('data', Buffer.from('/workspace/docs/image.png\n'));
+        await save;
     });
 
-    test('saveClipboardImageToFileAndGetPath reports missing xclip on non-WSL Linux', () => {
+    it('saveClipboardImageToFileAndGetPath reports missing xclip on non-WSL Linux', () => {
         var originalIsWsl = PasterAny.isWsl;
         var callbackCalled = false;
 
@@ -498,7 +550,7 @@ suite('Paster WSL and subprocess helpers', () => {
             callbackCalled = true;
         });
 
-        spawnCalls[0].proc.stdout.emit('data', new Buffer('no xclip\n'));
+        spawnCalls[0].proc.stdout.emit('data', Buffer.from('no xclip\n'));
 
         PasterAny.isWsl = originalIsWsl;
         assert.equal(callbackCalled, false);
@@ -620,4 +672,8 @@ function restoreEnv(name: string, value: string) {
     } else {
         process.env[name] = value;
     }
+}
+
+function waitForAsyncWork() {
+    return new Promise<void>((resolve) => setTimeout(resolve, 0));
 }

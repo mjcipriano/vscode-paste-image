@@ -35,7 +35,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install --no-package-lock
+        run: npm ci
 
       - name: Prepare release metadata
         id: release
@@ -64,7 +64,7 @@ jobs:
         run: npm test
 
       - name: Package VSIX
-        run: npx --yes vsce package
+        run: npm run package:vsix
 
       - name: Verify VSIX exists
         run: test -f "${{ steps.release.outputs.vsix }}"
@@ -90,7 +90,7 @@ jobs:
             '' \
             'Build verification:' \
             '- npm test' \
-            '- npx --yes vsce package' > "$release_notes"
+            '- npm run package:vsix' > "$release_notes"
 
           if gh release view "${{ steps.release.outputs.tag }}" >/dev/null 2>&1; then
             gh release upload "${{ steps.release.outputs.tag }}" "${{ steps.release.outputs.vsix }}" --clobber

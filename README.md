@@ -36,7 +36,7 @@ Install dependencies if needed, then build the VSIX:
 
 ```
 npm install
-npx vsce package
+npm run package:vsix
 ```
 
 ### Release from GitHub Actions

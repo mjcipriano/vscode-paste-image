@@ -4,8 +4,8 @@ on:
   pull_request:
 
 jobs:
-  test:
-    name: Test
+  unit:
+    name: Unit
     runs-on: ubuntu-latest
 
     steps:
@@ -20,5 +20,52 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
+      - name: Run unit tests
         run: npm test
+
+  integration:
+    name: Integration (${{ matrix.vscode-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        vscode-version: ['1.115.0', 'stable']
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run VS Code smoke test
+        run: xvfb-run -a npm run test:integration
+        env:
+          VSCODE_VERSION: ${{ matrix.vscode-version }}
+
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build VSIX
+        run: npm run package:vsix
+
+      - name: Verify VSIX contents
+        run: npm run verify:vsix

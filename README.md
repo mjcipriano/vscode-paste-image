@@ -30,6 +30,8 @@ This internal build uses the `pasteImageInternal.*` settings namespace so it can
 
 Native Windows, macOS, and non-WSL Linux behavior is unchanged. Non-WSL Linux still uses `xclip`.
 
+This build currently targets VS Code `1.115.0` and newer. CI smoke-tests the extension host against the minimum supported version and current stable VS Code before release.
+
 ### Package as VSIX
 
 Install dependencies if needed, then build the VSIX:
@@ -41,7 +43,7 @@ npm run package:vsix
 
 ### Release from GitHub Actions
 
-Merging to `master` automatically runs the release workflow. The workflow bumps the `internal.N` version in `package.json`, updates the VSIX filename references in this README, runs the unit tests, packages the VSIX, commits the version bump back to `master`, creates the matching tag, creates or updates the GitHub Release, and attaches the generated VSIX file.
+Merging to `master` automatically runs the release workflow. The workflow bumps the `internal.N` version in `package.json`, updates the VSIX filename references in this README, runs the unit tests, smoke-tests extension activation on the minimum supported VS Code version, packages the VSIX, verifies the packaged file contents, commits the version bump back to `master`, creates the matching tag, creates or updates the GitHub Release, and attaches the generated VSIX file.
 
 Release tags use the package version with a leading `v`, for example `v1.0.4-internal.8`.
 
@@ -61,8 +63,8 @@ code --install-extension paste-image-internal-1.0.4-internal.8.vsix
 
 Current-file variables can be used in `pasteImageInternal.defaultName`, `pasteImageInternal.path`, `pasteImageInternal.basePath`, `pasteImageInternal.namePrefix`, `pasteImageInternal.nameSuffix`, and `pasteImageInternal.insertPattern`:
 
-- `${projectRoot}`: the path of the project opened in VS Code.
-- `${projectRootName}`: the name of the project root directory.
+- `${projectRoot}`: the path of the workspace folder that contains the current editing file.
+- `${projectRootName}`: the name of that workspace folder.
 - `${currentFileDir}`: the path of the directory that contains the current editing file.
 - `${currentFileDirName}`: the name of the directory that contains the current editing file.
 - `${currentFileParentDir}`: the path of the parent directory of `${currentFileDir}`.
@@ -81,7 +83,7 @@ For example, to prepend only the current directory name to pasted image filename
 
     The default image file name.
 
-    The value of this config will be pass to the 'format' function of moment library(a js time manipulation library), you can read document https://momentjs.com/docs/#/displaying/format/ for advanced usage.
+    The value of this config supports current-file variables plus timestamp tokens like `YYYY`, `YY`, `Y`, `MM`, `M`, `DD`, `D`, `HH`, `H`, `mm`, `m`, `ss`, and `s`.
 
     You can use current-file variables.
 

@@ -3,14 +3,13 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
-import moment = require('moment');
 
 export class Logger {
     static channel: vscode.OutputChannel;
 
     static log(message: any) {
         if (this.channel) {
-            let time = moment().format("MM-DD HH:mm:ss");
+            let time = formatTimestamp(new Date(), 'MM-DD HH:mm:ss');
             this.channel.appendLine(`[${time}] ${message}`);
         }
     }
@@ -38,6 +37,35 @@ function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
     return error instanceof Error;
 }
 
+function pad(value: number): string {
+    return String(value).padStart(2, '0');
+}
+
+function formatTimestamp(date: Date, pattern: string): string {
+    const replacements: { token: string; value: string }[] = [
+        { token: 'YYYY', value: String(date.getFullYear()) },
+        { token: 'YY', value: pad(date.getFullYear() % 100) },
+        { token: 'Y', value: String(date.getFullYear()) },
+        { token: 'MM', value: pad(date.getMonth() + 1) },
+        { token: 'M', value: String(date.getMonth() + 1) },
+        { token: 'DD', value: pad(date.getDate()) },
+        { token: 'D', value: String(date.getDate()) },
+        { token: 'HH', value: pad(date.getHours()) },
+        { token: 'H', value: String(date.getHours()) },
+        { token: 'mm', value: pad(date.getMinutes()) },
+        { token: 'm', value: String(date.getMinutes()) },
+        { token: 'ss', value: pad(date.getSeconds()) },
+        { token: 's', value: String(date.getSeconds()) }
+    ];
+
+    let result = pattern;
+    for (const replacement of replacements) {
+        result = result.replace(new RegExp(replacement.token, 'g'), replacement.value);
+    }
+
+    return result;
+}
+
 export function activate(context: vscode.ExtensionContext) {
     Logger.channel = vscode.window.createOutputChannel("PasteImageInternal")
     context.subscriptions.push(Logger.channel);
@@ -60,6 +88,7 @@ export function deactivate() {
 
 export class Paster {
     static CONFIG_SECTION = "pasteImageInternal";
+    static nowProvider = () => new Date();
 
     static PATH_VARIABLE_CURRNET_FILE_DIR = /\$\{currentFileDir\}/g;
     static PATH_VARIABLE_CURRNET_FILE_DIR_NAME = /\$\{currentFileDirName\}/g;
@@ -106,8 +135,7 @@ export class Paster {
             return;
         }
         let filePath = fileUri.fsPath;
-        let folderPath = path.dirname(filePath);
-        let projectPath = vscode.workspace.rootPath;
+        let projectPath = this.getWorkspacePath(fileUri);
 
         // get selection as image file name, need check
         var selection = editor.selection;
@@ -118,13 +146,13 @@ export class Paster {
         }
 
         // load config pasteImageInternal.defaultName
-        this.defaultNameConfig = this.getConfigValue('defaultName');
+        this.defaultNameConfig = this.getConfigValue('defaultName', fileUri);
         if (!this.defaultNameConfig) {
             this.defaultNameConfig = "Y-MM-DD-HH-mm-ss"
         }
 
         // load config pasteImageInternal.path
-        this.folderPathConfig = this.getConfigValue('path');
+        this.folderPathConfig = this.getConfigValue('path', fileUri);
         if (!this.folderPathConfig) {
             this.folderPathConfig = "${currentFileDir}";
         }
@@ -133,7 +161,7 @@ export class Paster {
             return;
         }
         // load config pasteImageInternal.basePath
-        this.basePathConfig = this.getConfigValue('basePath');
+        this.basePathConfig = this.getConfigValue('basePath', fileUri);
         if (!this.basePathConfig) {
             this.basePathConfig = "";
         }
@@ -142,16 +170,16 @@ export class Paster {
             return;
         }
         // load other config
-        this.prefixConfig = this.getConfigValue('prefix');
-        this.suffixConfig = this.getConfigValue('suffix');
-        this.forceUnixStyleSeparatorConfig = this.getConfigValue('forceUnixStyleSeparator');
+        this.prefixConfig = this.getConfigValue('prefix', fileUri);
+        this.suffixConfig = this.getConfigValue('suffix', fileUri);
+        this.forceUnixStyleSeparatorConfig = this.getConfigValue('forceUnixStyleSeparator', fileUri);
         this.forceUnixStyleSeparatorConfig = !!this.forceUnixStyleSeparatorConfig;
-        this.encodePathConfig = this.getConfigValue('encodePath');
-        this.namePrefixConfig = this.getConfigValue('namePrefix');
-        this.nameSuffixConfig = this.getConfigValue('nameSuffix');
-        this.insertPatternConfig = this.getConfigValue('insertPattern');
-        this.showFilePathConfirmInputBox = this.getConfigValue('showFilePathConfirmInputBox') || false;
-        this.filePathConfirmInputBoxMode = this.getConfigValue('filePathConfirmInputBoxMode');
+        this.encodePathConfig = this.getConfigValue('encodePath', fileUri);
+        this.namePrefixConfig = this.getConfigValue('namePrefix', fileUri);
+        this.nameSuffixConfig = this.getConfigValue('nameSuffix', fileUri);
+        this.insertPatternConfig = this.getConfigValue('insertPattern', fileUri);
+        this.showFilePathConfirmInputBox = this.getConfigValue('showFilePathConfirmInputBox', fileUri) || false;
+        this.filePathConfirmInputBoxMode = this.getConfigValue('filePathConfirmInputBoxMode', fileUri);
 
         // replace variable in config
         this.defaultNameConfig = this.replacePathVariable(this.defaultNameConfig, projectPath, filePath, (x) => `[${x}]`);
@@ -225,7 +253,7 @@ export class Paster {
         // image file name
         let imageFileName = "";
         if (!selectText) {
-            imageFileName = this.namePrefixConfig + moment().format(this.defaultNameConfig) + this.nameSuffixConfig + ".png";
+            imageFileName = this.namePrefixConfig + formatTimestamp(this.nowProvider(), this.defaultNameConfig) + this.nameSuffixConfig + ".png";
         } else {
             imageFileName = this.namePrefixConfig + selectText + this.nameSuffixConfig + ".png";
         }
@@ -529,8 +557,13 @@ export class Paster {
         return pathStr;
     }
 
-    private static getConfigValue(key: string) {
-        return vscode.workspace.getConfiguration(this.CONFIG_SECTION)[key];
+    public static getWorkspacePath(fileUri: vscode.Uri): string {
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
+        return workspaceFolder ? workspaceFolder.uri.fsPath : '';
+    }
+
+    private static getConfigValue(key: string, scope?: vscode.Uri) {
+        return vscode.workspace.getConfiguration(this.CONFIG_SECTION, scope)[key];
     }
 }
 

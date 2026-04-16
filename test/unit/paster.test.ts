@@ -21,6 +21,8 @@ var nextInputBoxValue: string = null;
 var registeredCommands: any[] = [];
 var configurationValues: any = {};
 var configurationConfigured: any = {};
+var configurationScopes: string[] = [];
+var workspaceFolderPaths: string[] = ['/workspace'];
 
 var vscodeMock = {
     window: {
@@ -56,7 +58,19 @@ var vscodeMock = {
     },
     workspace: {
         rootPath: '/workspace',
-        getConfiguration: function (section: string) {
+        workspaceFolders: [{ uri: { fsPath: '/workspace' } }],
+        getWorkspaceFolder: function (fileUri: any) {
+            var filePath = fileUri && fileUri.fsPath ? fileUri.fsPath : '';
+            var matchingPath = workspaceFolderPaths.find(function (folderPath) {
+                return filePath === folderPath ||
+                    filePath.indexOf(folderPath + path.sep) === 0 ||
+                    filePath.indexOf(folderPath + '/') === 0;
+            });
+
+            return matchingPath ? { uri: { fsPath: matchingPath } } : undefined;
+        },
+        getConfiguration: function (section: string, scope?: any) {
+            configurationScopes.push(scope && scope.fsPath ? scope.fsPath : '');
             return createConfiguration(section);
         }
     }
@@ -95,6 +109,7 @@ describe('extension activation', () => {
 describe('Paster configuration helpers', () => {
     beforeEach(() => {
         resetConfigurations();
+        setWorkspaceFolders(['/workspace']);
     });
 
     it('uses internal configuration values', () => {
@@ -114,6 +129,26 @@ describe('Paster configuration helpers', () => {
         setConfigValue('pasteImageInternal', 'path', '${currentFileDir}', false);
 
         assert.equal(PasterAny.getConfigValue('path'), '${currentFileDir}');
+    });
+
+    it('passes the active file URI into scoped configuration lookup', () => {
+        var fileUri = { fsPath: '/workspace/docs/guide.md' };
+
+        PasterAny.getConfigValue('path', fileUri);
+
+        assert.deepEqual(configurationScopes, ['/workspace/docs/guide.md']);
+    });
+
+    it('resolves the workspace path for the containing multi-root folder', () => {
+        setWorkspaceFolders(['/workspace-a', '/workspace-b']);
+
+        assert.equal(Paster.getWorkspacePath({ fsPath: '/workspace-b/docs/guide.md' }), '/workspace-b');
+    });
+
+    it('returns an empty workspace path when the file is outside the workspace', () => {
+        setWorkspaceFolders(['/workspace-a']);
+
+        assert.equal(Paster.getWorkspacePath({ fsPath: '/outside/docs/guide.md' }), '');
     });
 });
 
@@ -144,6 +179,30 @@ describe('Paster path helpers', () => {
         );
 
         assert.equal(result, '[/workspace]|[workspace]|[/workspace/docs/api]|[api]|[/workspace/docs]|[docs]|[guide.md]|[guide]|[.md]');
+    });
+
+    it('formats timestamp tokens without a third-party date library', async () => {
+        Paster.defaultNameConfig = 'YYYY-YY-Y-MM-M-DD-D-HH-H-mm-m-ss-s';
+        Paster.namePrefixConfig = '';
+        Paster.nameSuffixConfig = '';
+        Paster.nowProvider = function () {
+            return new Date(2024, 2, 4, 5, 6, 7);
+        };
+
+        await new Promise<void>((resolve, reject) => {
+            Paster.getImagePath('/workspace/docs/guide.md', '', 'images', false, 'fullPath', function (err, imagePath) {
+                try {
+                    assert.ifError(err);
+                    assert.equal(
+                        imagePath,
+                        path.join('/workspace/docs/images', '2024-24-2024-03-3-04-4-05-5-06-6-07-7.png')
+                    );
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        });
     });
 
     it('getImagePath can prepend the current directory name to the image filename', async () => {
@@ -568,6 +627,9 @@ function resetPasterConfig() {
     Paster.forceUnixStyleSeparatorConfig = true;
     Paster.encodePathConfig = 'urlEncodeSpace';
     Paster.insertPatternConfig = '${imageSyntaxPrefix}${imageFilePath}${imageSyntaxSuffix}';
+    Paster.nowProvider = function () {
+        return new Date();
+    };
 }
 
 function resetMessages() {
@@ -579,6 +641,15 @@ function resetMessages() {
 function resetConfigurations() {
     configurationValues = {};
     configurationConfigured = {};
+    configurationScopes = [];
+}
+
+function setWorkspaceFolders(folderPaths: string[]) {
+    workspaceFolderPaths = folderPaths.slice();
+    vscodeMock.workspace.rootPath = folderPaths.length > 0 ? folderPaths[0] : undefined;
+    vscodeMock.workspace.workspaceFolders = folderPaths.map(function (folderPath) {
+        return { uri: { fsPath: folderPath } };
+    });
 }
 
 function setConfigValue(section: string, key: string, value: any, configured: boolean) {
